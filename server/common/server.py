@@ -23,8 +23,9 @@ class Server:
         signal.signal(signal.SIGTERM, self.__close_connections)
         while not self._stop:
             client_sock = self.__accept_new_connection()
-            self._client_connections.append(client_sock)
-            self.__handle_client_connection(client_sock)
+            if client_sock:
+                self._client_connections.append(client_sock)
+                self.__handle_client_connection(client_sock)
 
     def __handle_client_connection(self, client_sock):
         """
@@ -56,9 +57,13 @@ class Server:
 
         # Connection arrived
         logging.info('action: accept_connections | result: in_progress')
-        c, addr = self._server_socket.accept()
-        logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
-        return c
+        try:
+            c, addr = self._server_socket.accept()
+            logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
+            return c
+        except OSError as e:
+            logging.error(f'action: accept_connections | result: fail | error: {e}')
+            return None
 
     def __close_connections(self, _signo, _frame):
         """
