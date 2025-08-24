@@ -2,8 +2,6 @@ import sys
 
 COMPOSE_NAME = 'tp0'
 NETWORK_NAME = 'testing_net'
-SERVER_LOG_LEVEL = 'DEBUG'
-CLIENT_LOG_LEVEL = 'DEBUG'
 NARGS = 3
 
 
@@ -30,7 +28,6 @@ def build_server_definition():
         'entrypoint': 'python3 /main.py',
         'environment': [
             'PYTHONUNBUFFERED=1',
-            f'LOGGING_LEVEL={SERVER_LOG_LEVEL}'
         ],
         'volumes': ['./server/config.ini:/config.ini'],
         'networks': [NETWORK_NAME]
@@ -45,7 +42,6 @@ def build_client_definition(n):
         'entrypoint': '/client',
         'environment': [
             f'CLI_ID={n}',
-            f'CLI_LOG_LEVEL={CLIENT_LOG_LEVEL}'
         ],
         'volumes': ['./client/config.yaml:/config.yaml'],
         'networks': [NETWORK_NAME],
