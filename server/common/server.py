@@ -20,7 +20,7 @@ class Server:
         finishes, servers starts to accept new connections again
         """
 
-        signal.signal(signal.SIGINT, self.__close_connections)
+        signal.signal(signal.SIGTERM, self.__close_connections)
         while not self._stop:
             client_sock = self.__accept_new_connection()
             self._client_connections.append(client_sock)
