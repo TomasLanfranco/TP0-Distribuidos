@@ -32,6 +32,7 @@ def build_server_definition():
             'PYTHONUNBUFFERED=1',
             f'LOGGING_LEVEL={SERVER_LOG_LEVEL}'
         ],
+        'volumes': ['./server/config.ini:/config.ini'],
         'networks': [NETWORK_NAME]
     }
     return format_dict_to_yaml({'server': server}, 1)
@@ -46,6 +47,7 @@ def build_client_definition(n):
             f'CLI_ID={n}',
             f'CLI_LOG_LEVEL={CLIENT_LOG_LEVEL}'
         ],
+        'volumes': ['./client/config.yaml:/config.yaml'],
         'networks': [NETWORK_NAME],
         'depends_on': ['server']
     }
