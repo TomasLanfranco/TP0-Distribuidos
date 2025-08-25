@@ -42,6 +42,11 @@ def build_client_definition(n):
         'entrypoint': '/client',
         'environment': [
             f'CLI_ID={n}',
+            f'CLI_NOMBRE=fulano{n}',
+            f'CLI_APELLIDO=mengano{n}',
+            f'CLI_DOCUMENTO={40000000 + n}',
+            f'CLI_FECHA_NACIMIENTO=2000-01-{n:02d}',
+            f'CLI_NUMERO_APOSTADO={7770 + n}',
         ],
         'volumes': ['./client/config.yaml:/config.yaml'],
         'networks': [NETWORK_NAME],
