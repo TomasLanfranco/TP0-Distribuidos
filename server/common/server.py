@@ -1,9 +1,10 @@
 import socket
 import logging
 import signal
+from time import time
 
-from decode import MSG_LEN_SIZE, NUMBER_SIZE, decode_bet
-from utils import store_bets
+from .decode import MSG_LEN_SIZE, NUMBER_SIZE, decode_bet
+from .utils import store_bets
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -38,30 +39,30 @@ class Server:
         client socket will also be closed
         """
         try:
-            msg_len = self.__read_exact(MSG_LEN_SIZE)
-            msg = self.__read_exact(msg_len)
-            
-            addr = client_sock.getpeername()
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            
+            msg_len = self.__read_exact(MSG_LEN_SIZE, client_sock)
+            msg = self.__read_exact(int.from_bytes(msg_len, 'big'), client_sock)
             bet = decode_bet(msg)
+
+            logging.info(f'action: receive_bet | result: success | dni: {bet.document} | n: {bet.number}')
+
             store_bets([bet])
             logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
             
-            client_sock.sendall(bet.number.to_bytes(NUMBER_SIZE, 'big'))
+            n = client_sock.send(bet.number.to_bytes(NUMBER_SIZE, 'big'))
+            logging.info(f'action: send_response | result: success | dni: {bet.document} | number: {bet.number}')
         except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
+            logging.error(f"action: receive_message | result: fail | error: {e}")
         finally:
             self._client_connections.remove(client_sock)
             client_sock.close()
             
-    def __read_exact(self, n):
+    def __read_exact(self, n, client_sock):
         """
-        Read exactly n bytes from the server socket
+        Read exactly n bytes from the client socket
         """
         buf = b''
         while n > 0:
-            chunk = self._server_socket.recv(n)
+            chunk = client_sock.recv(n)
             if chunk == b'':
                 raise ConnectionError("socket connection broken")
             buf += chunk

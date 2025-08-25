@@ -1,4 +1,4 @@
-from utils import Bet
+from .utils import Bet
 
 BIRTH_SIZE = 10
 MSG_LEN_SIZE = 2

@@ -1,9 +1,9 @@
 package common
 
 import (
-	"bufio"
 	"encoding/binary"
 	"errors"
+	"io"
 	"net"
 	"os"
 	"os/signal"
@@ -114,15 +114,15 @@ func (c *Client) sendBet(bet Bet) error {
 
 func (c *Client) readResponse(bet Bet) error {
 	msg := make([]byte, NUMBER_SIZE)
-	n, err := bufio.NewReader(c.conn).Read(msg)
-	c.conn.Close()
-	if err != nil || n != NUMBER_SIZE {
+	_, err := io.ReadFull(c.conn, msg)
+	if err != nil {
 		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 			c.config.ID,
 			err,
 		)
 		return err
 	}
+	c.conn.Close()
 
 	log.Infof("action: receive_message | result: success | client_id: %v | message: %s",
 		c.config.ID,
