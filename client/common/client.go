@@ -2,7 +2,7 @@ package common
 
 import (
 	"encoding/binary"
-	"errors"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -74,70 +74,63 @@ func (c *Client) MakeBet(bet Bet) {
 	default:
 		c.createClientSocket()
 
-		err := c.sendBet(bet)
-		if err != nil {
+		if err := c.sendBet(bet); err != nil {
+			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+				c.config.ID,
+				err,
+			)
 			return
 		}
-		err = c.readResponse(bet)
-		if err != nil {
-			return
-		}
-		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-			bet.Dni,
-			bet.Number,
-		)
 
+		if err := c.readResponse(bet); err != nil {
+			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+				c.config.ID,
+				err,
+			)
+			return
+		}
 	}
 }
 
 func (c *Client) sendBet(bet Bet) error {
 	msg, msg_len := EncodeBet(bet)
-	sent := 0
-	for sent < int(msg_len) {
+
+	for sent := 0; sent < int(msg_len); {
 		n, err := c.conn.Write(msg[sent:])
 		if err != nil {
-			log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
 			return err
 		}
 		sent += n
 	}
 
-	log.Infof("action: send_message | result: success | client_id: %v | sent: %v",
-		c.config.ID,
-		sent,
-	)
 	return nil
 }
 
 func (c *Client) readResponse(bet Bet) error {
 	msg := make([]byte, NUMBER_SIZE)
-	_, err := io.ReadFull(c.conn, msg)
-	if err != nil {
-		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
+	if _, err := io.ReadFull(c.conn, msg); err != nil {
 		return err
 	}
-	c.conn.Close()
+	if err := c.conn.Close(); err != nil {
+		return err
+	}
 
 	log.Infof("action: receive_message | result: success | client_id: %v | message: %s",
 		c.config.ID,
 		msg,
 	)
 
-	receivedNumber := binary.BigEndian.Uint32(msg)
-	if receivedNumber != bet.Number {
-		err := errors.New("received wrong number")
-		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
+	if receivedNumber := binary.BigEndian.Uint32(msg); receivedNumber != bet.Number {
+		return fmt.Errorf("received number: %d, expected: %d",
+			receivedNumber,
+			bet.Number,
 		)
-		return err
 	}
+
+	log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
+		bet.Dni,
+		bet.Number,
+	)
 
 	return nil
 }

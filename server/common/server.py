@@ -48,13 +48,16 @@ class Server:
             store_bets([bet])
             logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
             
-            n = client_sock.send(bet.number.to_bytes(NUMBER_SIZE, 'big'))
+            self.__send_bet_number(client_sock, bet)
             logging.info(f'action: send_response | result: success | dni: {bet.document} | number: {bet.number}')
         except OSError as e:
             logging.error(f"action: receive_message | result: fail | error: {e}")
         finally:
             self._client_connections.remove(client_sock)
             client_sock.close()
+
+    def __send_bet_number(self, client_sock, bet):
+        client_sock.sendall(bet.number.to_bytes(NUMBER_SIZE, 'big'))
             
     def __read_exact(self, n, client_sock):
         """
