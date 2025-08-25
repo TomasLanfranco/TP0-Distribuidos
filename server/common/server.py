@@ -2,8 +2,8 @@ import socket
 import logging
 import signal
 
-from server.common.decode import MSG_LEN_SIZE, NUMBER_SIZE, decode_bet
-from server.common.utils import store_bets
+from decode import MSG_LEN_SIZE, NUMBER_SIZE, decode_bet
+from utils import store_bets
 
 class Server:
     def __init__(self, port, listen_backlog):
