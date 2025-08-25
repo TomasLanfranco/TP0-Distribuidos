@@ -3,4 +3,6 @@
 
 # Executables
 bin/
+
 tests/
+.data/

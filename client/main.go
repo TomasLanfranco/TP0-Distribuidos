@@ -108,16 +108,9 @@ func main() {
 		ID:            v.GetString("id"),
 		LoopAmount:    v.GetInt("loop.amount"),
 		LoopPeriod:    v.GetDuration("loop.period"),
-	}
-
-	bet := common.Bet{
-		Name:    v.GetString("nombre"),
-		Surname: v.GetString("apellido"),
-		Dni:     uint32(v.GetInt("dni")),
-		Birth:   v.GetString("fecha_nacimiento"),
-		Number:  uint32(v.GetInt("numero")),
+		BatchAmount:   v.GetInt("batch.maxAmount"),
 	}
 
 	client := common.NewClient(clientConfig)
-	client.MakeBet(bet)
+	common.LoadBatches(clientConfig.ID, clientConfig.BatchAmount, client)
 }

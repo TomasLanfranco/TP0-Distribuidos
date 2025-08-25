@@ -30,6 +30,7 @@ type ClientConfig struct {
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
+	BatchAmount   int
 }
 
 // Client Entity that encapsulates how
@@ -63,7 +64,7 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-func (c *Client) MakeBet(bet Bet) {
+func (c *Client) MakeBets(bets []Bet) {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGTERM)
 
@@ -74,7 +75,7 @@ func (c *Client) MakeBet(bet Bet) {
 	default:
 		c.createClientSocket()
 
-		if err := c.sendBet(bet); err != nil {
+		if err := c.sendBets(bets); err != nil {
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 				c.config.ID,
 				err,
@@ -82,18 +83,21 @@ func (c *Client) MakeBet(bet Bet) {
 			return
 		}
 
-		if err := c.readResponse(bet); err != nil {
+		last_bet_number := bets[len(bets)-1].Number
+		if err := c.readResponse(last_bet_number); err != nil {
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 				c.config.ID,
 				err,
 			)
 			return
 		}
+
+		log.Infof("action: send_batch | result: success | batch_size: %d", len(bets))
 	}
 }
 
-func (c *Client) sendBet(bet Bet) error {
-	msg, msg_len := EncodeBet(bet)
+func (c *Client) sendBets(bets []Bet) error {
+	msg, msg_len := EncodeBetsBatch(bets)
 
 	for sent := 0; sent < int(msg_len); {
 		n, err := c.conn.Write(msg[sent:])
@@ -106,7 +110,7 @@ func (c *Client) sendBet(bet Bet) error {
 	return nil
 }
 
-func (c *Client) readResponse(bet Bet) error {
+func (c *Client) readResponse(expected uint32) error {
 	msg := make([]byte, NUMBER_SIZE)
 	if _, err := io.ReadFull(c.conn, msg); err != nil {
 		return err
@@ -120,17 +124,12 @@ func (c *Client) readResponse(bet Bet) error {
 		msg,
 	)
 
-	if receivedNumber := binary.BigEndian.Uint32(msg); receivedNumber != bet.Number {
+	if receivedNumber := binary.BigEndian.Uint32(msg); receivedNumber != expected {
 		return fmt.Errorf("received number: %d, expected: %d",
 			receivedNumber,
-			bet.Number,
+			expected,
 		)
 	}
-
-	log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-		bet.Dni,
-		bet.Number,
-	)
 
 	return nil
 }

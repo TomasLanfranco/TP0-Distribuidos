@@ -191,7 +191,7 @@ La corrección personal tendrá en cuenta la calidad del código entregado y cas
 Decidi hacer un protocolo de comunicacion binario estructurado de la siguiente forma:
 
 ```
-<MESSAGE_LEN><NOMBRE_LEN><NOMBRE><APELLIDO_LEN><APELLIDO><DNI><FECHA_NAC><NUMERO>
+[MESSAGE_LEN][NOMBRE_LEN][NOMBRE][APELLIDO_LEN][APELLIDO][DNI][FECHA_NAC][NUMERO]
 ```
 
 - MESSAGE_LEN: 2B
@@ -203,7 +203,19 @@ Decidi hacer un protocolo de comunicacion binario estructurado de la siguiente f
 - FECHA_NACIMIENTO: 10B (formato yyyy-mm-dd)
 - NUMERO: 4B
 
-Dicho mensaje sera enviado por el cliente (la agencia de quiniela) al servidor (central de Loteria), el cual
-al procesarlo le enviara un mensajes de confirmacion con el numero apostado.
+Dicho mensaje sera enviado por el cliente (la agencia de quiniela) al servidor (central de Loteria), el cual al procesarlo le enviara un mensajes de confirmacion con el numero apostado.
 
 Los paquetes seran enviados usando TCP, y de momento no se implementa ninguna politica de reintentos.
+
+
+## Ejercicio No. 6
+
+#### Protocolo - Procesamiento Batch
+
+Para permitir el procesamiento por batchs de `n` apuestas, decidi agregar un campo `BATCH_SIZE` de 2B, que indique el total de apuestas a mandar, seguido por las `n` apuestas (siguiendo la serializacion ya establecida). Por lo tanto el mensaje quedaria de la forma:
+
+```
+[MESSAGE_LEN][BATCH_SIZE]<apuesta_1>...<apuesta_n>
+```
+
+Por cada mensaje de batch el servidor indica su recepcion enviando el numero de la ultima apuesta del batch para confirmarle al cliente el procesamiento de este.

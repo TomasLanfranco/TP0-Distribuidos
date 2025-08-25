@@ -5,8 +5,25 @@ import "encoding/binary"
 const MAX_LENGTH = 512
 const MSG_LEN_SIZE = 2
 const NUMBER_SIZE = 4
+const BATCH_SIZE_SIZE = 2
 
-func EncodeBet(bet Bet) ([]byte, uint16) {
+func EncodeBetsBatch(bets []Bet) ([]byte, uint16) {
+	encoded := make([]byte, 0, MAX_LENGTH)
+
+	batchSize := uint16(len(bets))
+	encoded = append(encoded, encodeShort(batchSize)...)
+
+	for _, bet := range bets {
+		encoded = append(encoded, EncodeBet(bet)...)
+	}
+
+	msgLen := uint16(len(encoded))
+	encoded = append(encodeShort(msgLen), encoded...)
+
+	return encoded, msgLen + MSG_LEN_SIZE
+}
+
+func EncodeBet(bet Bet) []byte {
 	encoded := make([]byte, 0, MAX_LENGTH)
 
 	encoded = append(encoded, encodeString(bet.Name)...)
@@ -14,10 +31,8 @@ func EncodeBet(bet Bet) ([]byte, uint16) {
 	encoded = append(encoded, encodeInt(bet.Dni)...)
 	encoded = append(encoded, []byte(bet.Birth)...)
 	encoded = append(encoded, encodeInt(bet.Number)...)
-	msgLen := uint16(len(encoded))
-	encoded = append(encodeShort(msgLen), encoded...)
 
-	return encoded, msgLen + MSG_LEN_SIZE
+	return encoded
 }
 
 func encodeString(s string) []byte {
