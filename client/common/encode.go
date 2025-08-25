@@ -4,6 +4,7 @@ import "encoding/binary"
 
 const MAX_LENGTH = 512
 const MSG_LEN_SIZE = 2
+const NUMBER_SIZE = 4
 
 func EncodeBet(bet Bet) ([]byte, uint16) {
 	encoded := make([]byte, 0, MAX_LENGTH)
@@ -14,7 +15,7 @@ func EncodeBet(bet Bet) ([]byte, uint16) {
 	encoded = append(encoded, []byte(bet.Birth)...)
 	encoded = append(encoded, encodeInt(bet.Number)...)
 	msgLen := uint16(len(encoded))
-	encoded = append(encoded, encodeShort(msgLen)...)
+	encoded = append(encodeShort(msgLen), encoded...)
 
 	return encoded, msgLen + MSG_LEN_SIZE
 }
@@ -29,7 +30,7 @@ func encodeString(s string) []byte {
 
 func encodeInt(i uint32) []byte {
 	bytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(bytes, uint32(i))
+	binary.BigEndian.PutUint32(bytes, i)
 	return bytes
 }
 

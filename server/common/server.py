@@ -2,6 +2,9 @@ import socket
 import logging
 import signal
 
+from server.common.decode import MSG_LEN_SIZE, NUMBER_SIZE, decode_bet
+from server.common.utils import store_bets
+
 class Server:
     def __init__(self, port, listen_backlog):
         # Initialize server socket
@@ -35,17 +38,35 @@ class Server:
         client socket will also be closed
         """
         try:
-            # TODO: Modify the receive to avoid short-reads
-            msg = client_sock.recv(1024).rstrip().decode('utf-8')
+            msg_len = self.__read_exact(MSG_LEN_SIZE)
+            msg = self.__read_exact(msg_len)
+            
             addr = client_sock.getpeername()
             logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
-            client_sock.send("{}\n".format(msg).encode('utf-8'))
+            
+            bet = decode_bet(msg)
+            store_bets([bet])
+            logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
+            
+            client_sock.sendall(bet.number.to_bytes(NUMBER_SIZE, 'big'))
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
         finally:
             self._client_connections.remove(client_sock)
             client_sock.close()
+            
+    def __read_exact(self, n):
+        """
+        Read exactly n bytes from the server socket
+        """
+        buf = b''
+        while n > 0:
+            chunk = self._server_socket.recv(n)
+            if chunk == b'':
+                raise ConnectionError("socket connection broken")
+            buf += chunk
+            n -= len(chunk)
+        return buf
 
     def __accept_new_connection(self):
         """

@@ -113,9 +113,10 @@ func (c *Client) sendBet(bet Bet) error {
 }
 
 func (c *Client) readResponse(bet Bet) error {
-	msg, err := bufio.NewReader(c.conn).ReadBytes('\n')
+	msg := make([]byte, NUMBER_SIZE)
+	n, err := bufio.NewReader(c.conn).Read(msg)
 	c.conn.Close()
-	if err != nil {
+	if err != nil || n != NUMBER_SIZE {
 		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 			c.config.ID,
 			err,
