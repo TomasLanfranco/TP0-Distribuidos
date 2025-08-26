@@ -26,7 +26,7 @@ func LoadBatches(id string, batch_size int, client *Client) {
 	for ; err == nil && len(bets) > 0; bets, err = GetBatch(batch_size, reader) {
 		client.MakeBets(bets)
 	}
-	if err != io.EOF {
+	if err != nil && err != io.EOF {
 		log.Criticalf("action: parse_bet | result: fail | client_id: %v | error: %v",
 			id,
 			err,
