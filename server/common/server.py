@@ -3,7 +3,7 @@ import logging
 import signal
 from time import time
 
-from .decode import MSG_LEN_SIZE, NUMBER_SIZE, decode_bet
+from .decode import MSG_LEN_SIZE, NUMBER_SIZE, decode_batch, decode_bet
 from .utils import store_bets
 
 class Server:
@@ -39,22 +39,30 @@ class Server:
         client socket will also be closed
         """
         try:
-            msg_len = self.__read_exact(MSG_LEN_SIZE, client_sock)
-            msg = self.__read_exact(int.from_bytes(msg_len, 'big'), client_sock)
-            bet = decode_bet(msg)
-
-            logging.info(f'action: receive_bet | result: success | dni: {bet.document} | n: {bet.number}')
-
-            store_bets([bet])
-            logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
-            
-            self.__send_bet_number(client_sock, bet)
-            logging.info(f'action: send_response | result: success | dni: {bet.document} | number: {bet.number}')
+            bets = self.process_batch(client_sock)
         except OSError as e:
             logging.error(f"action: receive_message | result: fail | error: {e}")
         finally:
             self._client_connections.remove(client_sock)
             client_sock.close()
+
+    def process_batch(self, client_sock):
+        msg_len = self.__read_exact(MSG_LEN_SIZE, client_sock)
+        msg = self.__read_exact(int.from_bytes(msg_len, 'big'), client_sock)
+        bets, _ = decode_batch(msg)
+        current_bet = 0
+        try:
+            for bet in bets:
+                store_bets([bet])
+                current_bet += 1
+                logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
+        except Exception as e:
+            logging.error(f'action: apuesta_almacenada | result: fail | cantidad: {len(bets)}')
+            self.__send_bet_number(client_sock, bets[current_bet - 1])
+        else:
+            self.__send_bet_number(client_sock, bets[-1])
+            logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
+            return bets
 
     def __send_bet_number(self, client_sock, bet):
         client_sock.sendall(bet.number.to_bytes(NUMBER_SIZE, 'big'))
