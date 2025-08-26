@@ -17,13 +17,9 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=1
-      - CLI_NOMBRE=fulano1
-      - CLI_APELLIDO=mengano1
-      - CLI_DOCUMENTO=40000001
-      - CLI_FECHA_NACIMIENTO=2000-01-01
-      - CLI_NUMERO_APOSTADO=7771
     volumes:
       - ./client/config.yaml:/config.yaml
+      - ./.data/agency-1.csv:/agency.csv
     networks:
       - testing_net
     depends_on:
