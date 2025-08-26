@@ -208,7 +208,7 @@ Dicho mensaje sera enviado por el cliente (la agencia de quiniela) al servidor (
 Los paquetes seran enviados usando TCP, y de momento no se implementa ninguna politica de reintentos.
 
 
-## Ejercicio No. 6
+### Ejercicio No. 6
 
 #### Protocolo - Procesamiento Batch
 
@@ -219,3 +219,27 @@ Para permitir el procesamiento por batchs de `n` apuestas, decidi agregar un cam
 ```
 
 Por cada mensaje de batch el servidor indica su recepcion enviando el numero de la ultima apuesta del batch para confirmarle al cliente el procesamiento de este.
+
+### Ejercicio No. 7
+
+#### Protocolo - Eleccion de ganadores
+
+Para que el cliente indique si quedan apuestas por enviar en algun batch, decidi agregar un byte `MORE_BETS` que sirva de flag para indicar si efectivamente quedan apuestas por enviar. Ademas, para identificar las agencias de las apuestas agrego un byte `AGENCIA`, por lo que la estructura del mensaje quedaria:
+
+```
+[MESSAGE_LEN][MORE_BETS][BATCH_SIZE]<apuesta_1>...<apuesta_n>
+```
+
+y la apuesta sera serializada de la siguiente manera:
+
+```
+[AGENCIA][NOMBRE_LEN][NOMBRE][APELLIDO_LEN][APELLIDO][DNI][FECHA_NAC][NUMERO]
+```
+
+Una vez todas las agencias enviaron la totalidad de sus apuestas, indicandolo con la flag `MORE_BETS`, el servidor eligira los numeros ganadores y notificara a las agencias correspondientes con el siguiente mensaje:
+
+```
+[MESSAGE_LEN][GANADORES_SIZE]<ganador_1>...<ganador_2>
+```
+
+donde `GANADORES_SIZE` es un uint16 y cada ganador es el numero (4B) de la apuesta ganadora correspondiente
