@@ -7,8 +7,15 @@ const MSG_LEN_SIZE = 2
 const NUMBER_SIZE = 4
 const BATCH_SIZE_SIZE = 2
 
-func EncodeBetsBatch(bets []Bet) ([]byte, uint16) {
+func EncodeBetsBatch(bets []Bet, agency uint8, more_bets bool) ([]byte, uint16) {
 	encoded := make([]byte, 0, MAX_LENGTH)
+	encoded = append(encoded, agency)
+
+	if more_bets {
+		encoded = append(encoded, 1)
+	} else {
+		encoded = append(encoded, 0)
+	}
 
 	batchSize := uint16(len(bets))
 	encoded = append(encoded, encodeShort(batchSize)...)

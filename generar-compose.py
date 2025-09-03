@@ -28,6 +28,7 @@ def build_server_definition():
         'entrypoint': 'python3 /main.py',
         'environment': [
             'PYTHONUNBUFFERED=1',
+            'AGENCY_COUNT=5'
         ],
         'volumes': ['./server/config.ini:/config.ini'],
         'networks': [NETWORK_NAME]
@@ -42,6 +43,7 @@ def build_client_definition(n):
         'entrypoint': '/client',
         'environment': [
             f'CLI_ID={n}',
+            f'CLI_AGENCY=agency{n}'
         ],
         'volumes': [
             './client/config.yaml:/config.yaml',

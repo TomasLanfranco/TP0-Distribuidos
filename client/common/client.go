@@ -27,6 +27,7 @@ type Bet struct {
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
 	ID            string
+	Agency        int
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
@@ -64,7 +65,7 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-func (c *Client) MakeBets(bets []Bet) {
+func (c *Client) MakeBets(bets []Bet, more_bets bool) {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGTERM)
 
@@ -75,7 +76,7 @@ func (c *Client) MakeBets(bets []Bet) {
 	default:
 		c.createClientSocket()
 
-		if err := c.sendBets(bets); err != nil {
+		if err := c.sendBets(bets, more_bets); err != nil {
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 				c.config.ID,
 				err,
@@ -83,21 +84,31 @@ func (c *Client) MakeBets(bets []Bet) {
 			return
 		}
 
-		last_bet_number := bets[len(bets)-1].Number
-		if err := c.readResponse(last_bet_number); err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
-			return
+		if more_bets {
+			last_bet_number := bets[len(bets)-1].Number
+			if err := c.readResponse(last_bet_number); err != nil {
+				log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+					c.config.ID,
+					err,
+				)
+				return
+			}
+		} else {
+			if err := c.readwinners(); err != nil {
+				log.Errorf("action: receive_winners | result: fail | client_id: %v | error: %v",
+					c.config.ID,
+					err,
+				)
+				return
+			}
 		}
 
 		log.Infof("action: send_batch | result: success | batch_size: %d", len(bets))
 	}
 }
 
-func (c *Client) sendBets(bets []Bet) error {
-	msg, msg_len := EncodeBetsBatch(bets)
+func (c *Client) sendBets(bets []Bet, more_bets bool) error {
+	msg, msg_len := EncodeBetsBatch(bets, uint8(c.config.Agency), more_bets)
 
 	for sent := 0; sent < int(msg_len); {
 		n, err := c.conn.Write(msg[sent:])
@@ -129,6 +140,30 @@ func (c *Client) readResponse(expected uint32) error {
 			receivedNumber,
 			expected,
 		)
+	}
+
+	return nil
+}
+
+func (c *Client) readwinners() error {
+	winners_count := make([]byte, 2)
+	if _, err := io.ReadFull(c.conn, winners_count); err != nil {
+		return err
+	}
+
+	for i := uint16(0); i < binary.BigEndian.Uint16(winners_count); i++ {
+		winner := make([]byte, NUMBER_SIZE)
+		if _, err := io.ReadFull(c.conn, winner); err != nil {
+			return err
+		}
+		log.Infof("action: receive_winner | result: success | client_id: %v | winner: %d",
+			c.config.ID,
+			binary.BigEndian.Uint32(winner),
+		)
+	}
+
+	if err := c.conn.Close(); err != nil {
+		return err
 	}
 
 	return nil

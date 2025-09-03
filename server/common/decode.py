@@ -7,20 +7,24 @@ BATCH_SIZE_SIZE = 2
 
 def decode_batch(bytes):
     msg_len, bytes = int.from_bytes(bytes[:BATCH_SIZE_SIZE], "big"), bytes[BATCH_SIZE_SIZE:]
+    agency, bytes = decode_byte(bytes)
+    more_batches, bytes = decode_byte(bytes)
     bets = []
     for i in range(msg_len):
-        bet, bytes = decode_bet(bytes)
+        bet, bytes = decode_bet(bytes, agency)
         bets.append(bet)
-    return bets, bytes
+    return agency, bets, more_batches
 
-def decode_bet(bytes):
-    agency = '0'
+def decode_bet(bytes, agency):
     name, bytes = decode_string(bytes)
     surname, bytes = decode_string(bytes)
     dni, bytes = decode_int(bytes)
     birth, bytes = decode_birth(bytes)
     number, bytes = decode_int(bytes)
     return Bet(agency, name, surname, str(dni), birth, str(number)), bytes
+
+def decode_byte(bytes):
+    return bytes[0], bytes[1:]
 
 def decode_birth(bytes):
     return bytes[:BIRTH_SIZE].decode("utf-8"), bytes[BIRTH_SIZE:]

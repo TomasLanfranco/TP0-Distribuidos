@@ -224,22 +224,16 @@ Por cada mensaje de batch el servidor indica su recepcion enviando el numero de 
 
 #### Protocolo - Eleccion de ganadores
 
-Para que el cliente indique si quedan apuestas por enviar en algun batch, decidi agregar un byte `MORE_BETS` que sirva de flag para indicar si efectivamente quedan apuestas por enviar. Ademas, para identificar las agencias de las apuestas agrego un byte `AGENCIA`, por lo que la estructura del mensaje quedaria:
+Para que el cliente indique si quedan apuestas por enviar en algun batch, decidi agregar un byte `MORE_BETS` que sirva de flag para indicar si efectivamente quedan apuestas por enviar. Ademas, para identificar las agencias de las apuestas agrego un byte `AGENCIA`, por lo que la estructura del mensaje enviado por el cliente quedaria:
 
 ```
-[MESSAGE_LEN][MORE_BETS][BATCH_SIZE]<apuesta_1>...<apuesta_n>
-```
-
-y la apuesta sera serializada de la siguiente manera:
-
-```
-[AGENCIA][NOMBRE_LEN][NOMBRE][APELLIDO_LEN][APELLIDO][DNI][FECHA_NAC][NUMERO]
+[MESSAGE_LEN][AGENCIA][MORE_BETS][BATCH_SIZE]<apuesta_1>...<apuesta_n>
 ```
 
 Una vez todas las agencias enviaron la totalidad de sus apuestas, indicandolo con la flag `MORE_BETS`, el servidor eligira los numeros ganadores y notificara a las agencias correspondientes con el siguiente mensaje:
 
 ```
-[MESSAGE_LEN][GANADORES_SIZE]<ganador_1>...<ganador_2>
+[GANADORES_SIZE]<ganador_1>...<ganador_2>
 ```
 
-donde `GANADORES_SIZE` es un uint16 y cada ganador es el numero (4B) de la apuesta ganadora correspondiente
+Donde `GANADORES_SIZE` es un uint16 y cada ganador es el numero (4B) de la apuesta ganadora correspondiente
