@@ -5,4 +5,8 @@
 bin/
 
 tests/
-.data/
+agency-1.csv
+agency-2.csv
+agency-3.csv
+agency-4.csv
+agency-5.csv
