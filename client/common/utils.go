@@ -26,7 +26,9 @@ func LoadBatches(id string, batch_size int, client *Client) {
 	var buffered_bets []Bet
 	for ; err == nil && len(bets) > 0; bets, err = GetBatch(batch_size, reader) {
 		if len(buffered_bets) > 0 { // False in the first loop
-			client.MakeBets(buffered_bets, true)
+			if !client.MakeBets(buffered_bets, true) {
+				return // An error occurred
+			}
 		}
 		buffered_bets = append(buffered_bets, bets...)
 	}

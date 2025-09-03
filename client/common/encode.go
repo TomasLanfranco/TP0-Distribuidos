@@ -6,6 +6,7 @@ const MAX_LENGTH = 512
 const MSG_LEN_SIZE = 2
 const NUMBER_SIZE = 4
 const BATCH_SIZE_SIZE = 2
+const DNI_SIZE = 4
 
 func EncodeBetsBatch(bets []Bet, agency uint8, more_bets bool) ([]byte, uint16) {
 	encoded := make([]byte, 0, MAX_LENGTH)

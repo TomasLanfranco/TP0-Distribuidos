@@ -3,7 +3,7 @@ import logging
 import signal
 from time import time
 
-from .decode import MSG_LEN_SIZE, NUMBER_SIZE, decode_batch, decode_bet
+from .decode import DNI_SIZE, MSG_LEN_SIZE, NUMBER_SIZE, decode_batch, decode_bet
 from .utils import has_won, load_bets, store_bets
 
 class Server:
@@ -24,20 +24,21 @@ class Server:
             if client_sock:
                 self._active_agencies_conn.append(client_sock)
                 self.__handle_client_connection(client_sock)
-            if self._agency_count == 0:
+            if self._agency_count == len(self._waiting_agencies_conn):
+                logging.info('action: consulta_ganadores | result: success')
                 self.notify_agencies()
 
     def notify_agencies(self):
         try:
             winners_per_agency = self.collect_winning_bets()
 
-            for agency in range(self._agency_count):
+            for agency in range(1, self._agency_count + 1):
                 client_sock = self._waiting_agencies_conn[agency]
-                self.__send_winners(client_sock, winners_per_agency[agency])
+                self.__send_winners(client_sock, winners_per_agency[agency - 1])
         except Exception as e:
             logging.error(f'action: notify_agencies | result: fail | error: {e}')
         finally:
-            self._stop = True
+            self.__close_connections(None, None)
 
     def collect_winning_bets(self):
         bets = load_bets()
@@ -65,9 +66,9 @@ class Server:
                 store_bets(bets)
                 if not more_batches:
                     self._waiting_agencies_conn[agency] = client_sock
+                    return
                 self.__send_ack(client_sock, bets[-1])
                 logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
-                return
         except Exception as e:
             logging.error(f'action: apuesta_almacenada | result: fail | cantidad: {len(bets)}')
             self.__send_ack(client_sock, 0)
@@ -83,7 +84,7 @@ class Server:
         msg = b''
         msg += len(winners).to_bytes(2, 'big')
         for bet in winners:
-            msg += bet.number.to_bytes(NUMBER_SIZE, 'big')
+            msg += bet.document.to_bytes(DNI_SIZE, 'big')
         client_sock.sendall(msg)
 
 

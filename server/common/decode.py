@@ -3,12 +3,13 @@ from .utils import Bet
 BIRTH_SIZE = 10
 MSG_LEN_SIZE = 2
 NUMBER_SIZE = 4
+DNI_SIZE = 4
 BATCH_SIZE_SIZE = 2
 
 def decode_batch(bytes):
-    msg_len, bytes = int.from_bytes(bytes[:BATCH_SIZE_SIZE], "big"), bytes[BATCH_SIZE_SIZE:]
     agency, bytes = decode_byte(bytes)
     more_batches, bytes = decode_byte(bytes)
+    msg_len, bytes = int.from_bytes(bytes[:BATCH_SIZE_SIZE], "big"), bytes[BATCH_SIZE_SIZE:]
     bets = []
     for i in range(msg_len):
         bet, bytes = decode_bet(bytes, agency)
