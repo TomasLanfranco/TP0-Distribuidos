@@ -43,7 +43,7 @@ def build_client_definition(n):
         'entrypoint': '/client',
         'environment': [
             f'CLI_ID={n}',
-            f'CLI_AGENCY=agency{n}'
+            f'CLI_AGENCY={n}'
         ],
         'volumes': [
             './client/config.yaml:/config.yaml',
