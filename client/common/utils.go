@@ -23,14 +23,14 @@ func LoadBatches(id string, batch_size int, client *Client) {
 
 	reader := csv.NewReader(file)
 	bets, err := GetBatch(batch_size, reader)
-	var buffered_bets []Bet
+	buffered_bets := make([]Bet, 0, batch_size)
 	for ; err == nil && len(bets) > 0; bets, err = GetBatch(batch_size, reader) {
 		if len(buffered_bets) > 0 { // False in the first loop
 			if !client.MakeBets(buffered_bets, true) {
 				return // An error occurred
 			}
 		}
-		buffered_bets = append(buffered_bets, bets...)
+		buffered_bets = bets
 	}
 	client.MakeBets(buffered_bets, false)
 	if err != nil {

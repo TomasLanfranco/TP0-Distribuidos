@@ -84,6 +84,7 @@ func (c *Client) MakeBets(bets []Bet, more_bets bool) bool {
 			)
 			return false
 		}
+		log.Infof("action: send_batch | result: success | batch_size: %d", len(bets))
 
 		if more_bets {
 			last_bet_number := bets[len(bets)-1].Number
@@ -104,7 +105,6 @@ func (c *Client) MakeBets(bets []Bet, more_bets bool) bool {
 			}
 		}
 
-		log.Infof("action: send_batch | result: success | batch_size: %d", len(bets))
 		return true
 	}
 }
@@ -127,14 +127,6 @@ func (c *Client) readResponse(expected uint32) error {
 	if _, err := io.ReadFull(c.conn, msg); err != nil {
 		return err
 	}
-	if err := c.conn.Close(); err != nil {
-		return err
-	}
-
-	log.Infof("action: receive_message | result: success | client_id: %v | message: %s",
-		c.config.ID,
-		msg,
-	)
 
 	if receivedNumber := binary.BigEndian.Uint32(msg); receivedNumber != expected {
 		return fmt.Errorf("received number: %d, expected: %d",

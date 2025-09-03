@@ -14,7 +14,7 @@ class Server:
         self._server_socket.listen(listen_backlog)
         self._active_agencies_conn = []
         self._waiting_agencies_conn = {}
-        self._agency_count = agency_count
+        self._agency_count = int(agency_count)
         self._stop = False
 
     def run(self):
@@ -64,11 +64,11 @@ class Server:
                 msg = self.__read_exact(int.from_bytes(msg_len, 'big'), client_sock)
                 agency, bets, more_batches = decode_batch(msg)
                 store_bets(bets)
+                logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
                 if not more_batches:
                     self._waiting_agencies_conn[agency] = client_sock
                     return
                 self.__send_ack(client_sock, bets[-1])
-                logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
         except Exception as e:
             logging.error(f'action: apuesta_almacenada | result: fail | cantidad: {len(bets)}')
             self.__send_ack(client_sock, 0)
@@ -128,6 +128,6 @@ class Server:
         self._server_socket.close()
         for conn in self._active_agencies_conn:
             conn.close()
-        for conn in self._waiting_agencies_conn:
+        for conn in self._waiting_agencies_conn.values():
             conn.close()
         logging.info('action: stop_server | result: success')

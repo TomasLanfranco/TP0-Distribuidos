@@ -21,14 +21,14 @@ def format_dict_to_yaml(d, indentation=0):
     return compose
 
 
-def build_server_definition():
+def build_server_definition(n):
     server = {
         'container_name': 'server',
         'image': 'server:latest',
         'entrypoint': 'python3 /main.py',
         'environment': [
             'PYTHONUNBUFFERED=1',
-            'AGENCY_COUNT=5'
+            f'AGENCY_COUNT={n}'
         ],
         'volumes': ['./server/config.ini:/config.ini'],
         'networks': [NETWORK_NAME]
@@ -74,7 +74,7 @@ def build_compose(client_n):
     compose += f'name: {COMPOSE_NAME}\n'
     compose += f'services:\n'
 
-    compose += build_server_definition()
+    compose += build_server_definition(client_n)
 
     for i in range(1, int(client_n) + 1):
         compose += "\n"
