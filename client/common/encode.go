@@ -12,9 +12,9 @@ func EncodeBetsBatch(bets []Bet, agency uint8, more_bets bool) ([]byte, uint16) 
 	encoded = append(encoded, agency)
 
 	if more_bets {
-		encoded = append(encoded, 1)
+		encoded = append(encoded, uint8(1))
 	} else {
-		encoded = append(encoded, 0)
+		encoded = append(encoded, uint8(0))
 	}
 
 	batchSize := uint16(len(bets))

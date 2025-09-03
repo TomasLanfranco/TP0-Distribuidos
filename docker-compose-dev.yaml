@@ -18,7 +18,7 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=1
-      - CLI_AGENCY=agency1
+      - CLI_AGENCY=1
     volumes:
       - ./client/config.yaml:/config.yaml
       - ./.data/agency-1.csv:/agency.csv
@@ -33,7 +33,7 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=2
-      - CLI_AGENCY=agency2
+      - CLI_AGENCY=2
     volumes:
       - ./client/config.yaml:/config.yaml
       - ./.data/agency-2.csv:/agency.csv
@@ -48,7 +48,7 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=3
-      - CLI_AGENCY=agency3
+      - CLI_AGENCY=3
     volumes:
       - ./client/config.yaml:/config.yaml
       - ./.data/agency-3.csv:/agency.csv
@@ -63,7 +63,7 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=4
-      - CLI_AGENCY=agency4
+      - CLI_AGENCY=4
     volumes:
       - ./client/config.yaml:/config.yaml
       - ./.data/agency-4.csv:/agency.csv
@@ -78,7 +78,7 @@ services:
     entrypoint: /client
     environment:
       - CLI_ID=5
-      - CLI_AGENCY=agency5
+      - CLI_AGENCY=5
     volumes:
       - ./client/config.yaml:/config.yaml
       - ./.data/agency-5.csv:/agency.csv
