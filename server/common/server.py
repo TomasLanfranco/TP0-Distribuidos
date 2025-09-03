@@ -12,8 +12,8 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
-        self._client_connections = []
-        self._waiting_agencies = {}
+        self._active_agencies_conn = []
+        self._waiting_agencies_conn = {}
         self._agency_count = agency_count
         self._stop = False
 
@@ -22,27 +22,39 @@ class Server:
         while not self._stop:
             client_sock = self.__accept_new_connection()
             if client_sock:
-                self._client_connections.append(client_sock)
+                self._active_agencies_conn.append(client_sock)
                 self.__handle_client_connection(client_sock)
             if self._agency_count == 0:
-                bets = load_bets()
-                winners_per_agency = {i: [] for i in range(self._agency_count)}
-                for bet in bets:
-                    if has_won(bet):
-                        logging.info(f'action: apuesta_ganadora | result: success | dni: {bet.document} | numero: {bet.number}')
-                        winners_per_agency[bet.agency - 1].append(bet)
+                self.notify_agencies()
 
-                for agency in range(self._agency_count):
-                    client_sock = self._waiting_agencies[agency]
-                    self.__send_winners(client_sock, winners_per_agency[agency])
+    def notify_agencies(self):
+        try:
+            winners_per_agency = self.collect_winning_bets()
 
-                self._stop = True
+            for agency in range(self._agency_count):
+                client_sock = self._waiting_agencies_conn[agency]
+                self.__send_winners(client_sock, winners_per_agency[agency])
+        except Exception as e:
+            logging.error(f'action: notify_agencies | result: fail | error: {e}')
+        finally:
+            self._stop = True
+
+    def collect_winning_bets(self):
+        bets = load_bets()
+        winners_per_agency = {i: [] for i in range(self._agency_count)}
+        for bet in bets:
+            if has_won(bet):
+                logging.info(f'action: apuesta_ganadora | result: success | dni: {bet.document} | numero: {bet.number}')
+                winners_per_agency[bet.agency - 1].append(bet)
+        return winners_per_agency
 
     def __handle_client_connection(self, client_sock):
         try:
             self.process_batch(client_sock)
         except OSError as e:
             logging.error(f"action: receive_message | result: fail | error: {e}")
+        finally:
+            self._active_agencies_conn.remove(client_sock)
 
     def process_batch(self, client_sock):
         try: 
@@ -52,7 +64,7 @@ class Server:
                 agency, bets, more_batches = decode_batch(msg)
                 store_bets(bets)
                 if not more_batches:
-                    self._waiting_agencies[agency] = client_sock
+                    self._waiting_agencies_conn[agency] = client_sock
                 self.__send_ack(client_sock, bets[-1])
                 logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
                 return
@@ -113,6 +125,8 @@ class Server:
         self._stop = True
         logging.info('action: stop_server | result: in_progress')
         self._server_socket.close()
-        for conn in self._client_connections:
+        for conn in self._active_agencies_conn:
+            conn.close()
+        for conn in self._waiting_agencies_conn:
             conn.close()
         logging.info('action: stop_server | result: success')
