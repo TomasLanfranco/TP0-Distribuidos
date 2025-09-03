@@ -19,7 +19,7 @@ var log = logging.MustGetLogger("log")
 type Bet struct {
 	Name    string
 	Surname string
-	Dni     uint32
+	Dni     string
 	Birth   string
 	Number  uint32
 }

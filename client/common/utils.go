@@ -52,11 +52,6 @@ func GetBatch(batch_size int, reader *csv.Reader) ([]Bet, error) {
 			return nil, err
 		}
 
-		dni, err := strconv.ParseInt(record[DNI_CSV], 10, 32)
-		if err != nil {
-			return nil, err
-		}
-
 		number, err := strconv.ParseInt(record[NUMERO_CSV], 10, 32)
 		if err != nil {
 			return nil, err
@@ -65,7 +60,7 @@ func GetBatch(batch_size int, reader *csv.Reader) ([]Bet, error) {
 		bet := Bet{
 			Name:    record[NOMBRE_CSV],
 			Surname: record[APELLIDO_CSV],
-			Dni:     uint32(dni),
+			Dni:     record[DNI_CSV],
 			Birth:   record[FECHA_CSV],
 			Number:  uint32(number),
 		}

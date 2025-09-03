@@ -19,7 +19,7 @@ def decode_batch(bytes):
 def decode_bet(bytes, agency):
     name, bytes = decode_string(bytes)
     surname, bytes = decode_string(bytes)
-    dni, bytes = decode_int(bytes)
+    dni, bytes = decode_string(bytes)
     birth, bytes = decode_birth(bytes)
     number, bytes = decode_int(bytes)
     return Bet(agency, name, surname, str(dni), birth, str(number)), bytes

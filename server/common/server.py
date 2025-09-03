@@ -25,7 +25,7 @@ class Server:
                 self._active_agencies_conn.append(client_sock)
                 self.__handle_client_connection(client_sock)
             if self._agency_count == len(self._waiting_agencies_conn):
-                logging.info('action: consulta_ganadores | result: success')
+                logging.info('action: sorteo | result: success')
                 self.notify_agencies()
 
     def notify_agencies(self):
@@ -84,7 +84,7 @@ class Server:
         msg = b''
         msg += len(winners).to_bytes(2, 'big')
         for bet in winners:
-            msg += bet.document.to_bytes(DNI_SIZE, 'big')
+            msg += int(bet.document).to_bytes(DNI_SIZE, 'big')
         client_sock.sendall(msg)
 
 
