@@ -23,8 +23,10 @@ class AgencyHandler(threading.Thread):
                 self.__send_ack(None)  # send ack with number 0 to indicate stop to client
                 self.__notify_ready()
             if agency > -2:
+                logging.info(f"action: receive_message | result: success | agency: {agency}")
                 self.__notify_server(agency)
             if agency > -1:
+                logging.info("action: wait_winners | result: in_progress")
                 winners = self.q.get()
                 self.__send_winners(winners)
         except Exception as e:
@@ -50,6 +52,12 @@ class AgencyHandler(threading.Thread):
 
 
     def __process_batches(self):
+        '''
+        Process batches until no more batches are expected or server asked to stop
+        Return -2 if server asked to stop
+        Return -1 if an error happened
+        Return agency number if all batches were processed successfully
+        '''
         last_bet = None
         while True:
             try:
