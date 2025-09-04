@@ -178,3 +178,33 @@ Se espera que se redacte una sección del README en donde se indique cómo ejecu
 Se proveen [pruebas automáticas](https://github.com/7574-sistemas-distribuidos/tp0-tests) de caja negra. Se exige que la resolución de los ejercicios pase tales pruebas, o en su defecto que las discrepancias sean justificadas y discutidas con los docentes antes del día de la entrega. El incumplimiento de las pruebas es condición de desaprobación, pero su cumplimiento no es suficiente para la aprobación. Respetar las entradas de log planteadas en los ejercicios, pues son las que se chequean en cada uno de los tests.
 
 La corrección personal tendrá en cuenta la calidad del código entregado y casos de error posibles, se manifiesten o no durante la ejecución del trabajo práctico. Se pide a los alumnos leer atentamente y **tener en cuenta** los criterios de corrección informados  [en el campus](https://campusgrado.fi.uba.ar/mod/page/view.php?id=73393).
+
+-----------------------------------------
+
+## Implementacion
+
+### Ejercicio 1
+
+El script `generar-compose.sh` se ejecuta de la siguiente forma:
+
+```
+./generar-compose.sh <archivo_de_salida> <N>
+```
+
+Internamente, pasa los parametros a un script de python, el cual se encargara de crear el archivo de docker compose con la cantidad de clientes adecuada.
+
+### Ejercicio 2
+
+Para agregar la persistencia de los archivos de configuracion al iniciar los containers, cambie el script del archivo docker compose para que ahora incluya volumenes de docker tanto para cliente y para servidor.
+
+Ademas, tuve que cambiar el archivo Dockerfile del cliente para que no se ejecute COPY del `config.yaml` cada vez que se modifica dicho archivo.
+
+### Ejercicio 3
+
+Dentro del script `validar-echo-server`, se corre el comando
+
+```
+docker run --rm --network $NETWORK_NAME busybox sh -c "echo '$EXPECTED'| nc server 12345"
+```
+
+Lo cual levanta un container de docker a partir de la imagen de busybox (una imagen con herramientas basicas de linux, incluyendo netcat), ademas de conectarlo a la misma docker network `NETWORK_NAME` del echo server. Una vez levantado el contenedor, se ejecuta netcat con el mensaje esperado y luego el script compara los resultados para determinar si funciona o no.
