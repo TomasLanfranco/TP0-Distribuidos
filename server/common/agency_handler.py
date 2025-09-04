@@ -1,8 +1,8 @@
 import threading
 import logging
 
-from server.common.decode import DNI_SIZE, MSG_LEN_SIZE, NUMBER_SIZE, decode_batch
-from server.common.utils import store_bets
+from .decode import DNI_SIZE, MSG_LEN_SIZE, NUMBER_SIZE, decode_batch
+from .utils import store_bets
 
 class AgencyHandler(threading.Thread):
     def __init__(self, client_socket, ready_clients_cond, ready_clients, q):

@@ -5,10 +5,8 @@ import signal
 import threading
 from time import time
 
-from server.common.agency_handler import AgencyHandler
-
-from .decode import DNI_SIZE, MSG_LEN_SIZE, NUMBER_SIZE, decode_batch, decode_bet
-from .utils import has_won, load_bets, store_bets
+from .agency_handler import AgencyHandler
+from .utils import has_won, load_bets
 
 class Server:
     def __init__(self, port, listen_backlog, agency_count):
