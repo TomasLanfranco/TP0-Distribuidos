@@ -1,7 +1,11 @@
+import queue
 import socket
 import logging
 import signal
+import threading
 from time import time
+
+from server.common.agency_handler import AgencyHandler
 
 from .decode import DNI_SIZE, MSG_LEN_SIZE, NUMBER_SIZE, decode_batch, decode_bet
 from .utils import has_won, load_bets, store_bets
@@ -12,29 +16,42 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
-        self._active_agencies_conn = []
-        self._waiting_agencies_conn = {}
         self._agency_count = int(agency_count)
+        self._threads = []
+        self._queues = []
+        # Contador compartido entre las agencias
+        self._active_agencies = 0
         self._stop = False
 
     def run(self):
+        ready_clients = 0
+        ready_clients_lock = threading.Lock()
+        ready_clients_cond = threading.Condition(ready_clients_lock)
+
         signal.signal(signal.SIGTERM, self.__close_connections)
-        while not self._stop:
+        
+        while not self._stop and self._active_agencies < self._agency_count:
             client_sock = self.__accept_new_connection()
             if client_sock:
-                self._active_agencies_conn.append(client_sock)
-                self.__handle_client_connection(client_sock)
-            if self._agency_count == len(self._waiting_agencies_conn):
-                logging.info('action: sorteo | result: success')
-                self.notify_agencies()
+                q = queue.Queue(1)
+                agency = AgencyHandler(client_sock, ready_clients_cond, ready_clients, q)
+                agency.start()
+                self._active_agencies += 1
+                self._queues.append(q)
+                self._threads.append(agency)
+
+        logging.info('action: sorteo | result: success')
+        with ready_clients_cond:
+            while ready_clients < self._agency_count:
+                ready_clients_cond.wait()
+            self.notify_agencies()
 
     def notify_agencies(self):
         try:
             winners_per_agency = self.collect_winning_bets()
-
-            for agency in range(1, self._agency_count + 1):
-                client_sock = self._waiting_agencies_conn[agency]
-                self.__send_winners(client_sock, winners_per_agency[agency - 1])
+            for q in self._queues:
+                agency = q.get()
+                q.put(winners_per_agency[agency])
         except Exception as e:
             logging.error(f'action: notify_agencies | result: fail | error: {e}')
         finally:
@@ -48,58 +65,6 @@ class Server:
                 logging.info(f'action: apuesta_ganadora | result: success | dni: {bet.document} | numero: {bet.number}')
                 winners_per_agency[bet.agency - 1].append(bet)
         return winners_per_agency
-
-    def __handle_client_connection(self, client_sock):
-        try:
-            self.process_batch(client_sock)
-        except OSError as e:
-            logging.error(f"action: receive_message | result: fail | error: {e}")
-        finally:
-            self._active_agencies_conn.remove(client_sock)
-
-    def process_batch(self, client_sock):
-        try: 
-            while True:
-                msg_len = self.__read_exact(MSG_LEN_SIZE, client_sock)
-                msg = self.__read_exact(int.from_bytes(msg_len, 'big'), client_sock)
-                agency, bets, more_batches = decode_batch(msg)
-                store_bets(bets)
-                logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
-                if not more_batches:
-                    self._waiting_agencies_conn[agency] = client_sock
-                    return
-                self.__send_ack(client_sock, bets[-1])
-        except Exception as e:
-            logging.error(f'action: apuesta_almacenada | result: fail | cantidad: {len(bets)}')
-            self.__send_ack(client_sock, 0)
-
-
-    def __send_ack(self, client_sock, bet):
-        msg = b''
-        msg += bet.number.to_bytes(NUMBER_SIZE, 'big')
-        client_sock.sendall(msg)
-
-
-    def __send_winners(self, client_sock, winners):
-        msg = b''
-        msg += len(winners).to_bytes(2, 'big')
-        for bet in winners:
-            msg += int(bet.document).to_bytes(DNI_SIZE, 'big')
-        client_sock.sendall(msg)
-
-
-    def __read_exact(self, n, client_sock):
-        """
-        Read exactly n bytes from the client socket
-        """
-        buf = b''
-        while n > 0:
-            chunk = client_sock.recv(n)
-            if chunk == b'':
-                raise ConnectionError("socket connection broken")
-            buf += chunk
-            n -= len(chunk)
-        return buf
 
     def __accept_new_connection(self):
         """
@@ -125,9 +90,8 @@ class Server:
         """
         self._stop = True
         logging.info('action: stop_server | result: in_progress')
-        self._server_socket.close()
-        for conn in self._active_agencies_conn:
-            conn.close()
-        for conn in self._waiting_agencies_conn.values():
-            conn.close()
+        if self._server_socket:
+            self._server_socket.close()
+        for t in self._threads:
+            t.join()
         logging.info('action: stop_server | result: success')
