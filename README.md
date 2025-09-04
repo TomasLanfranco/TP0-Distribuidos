@@ -184,6 +184,38 @@ La corrección personal tendrá en cuenta la calidad del código entregado y cas
 
 ## Implementacion
 
+### Ejercicio 1
+
+El script `generar-compose.sh` se ejecuta de la siguiente forma:
+
+```
+./generar-compose.sh <archivo_de_salida> <N>
+```
+
+Internamente, pasa los parametros a un script de python, el cual se encargara de crear el archivo de docker compose con la cantidad de clientes adecuada.
+
+### Ejercicio 2
+
+Para agregar la persistencia de los archivos de configuracion al iniciar los containers, cambie el script del archivo docker compose para que ahora incluya volumenes de docker tanto para cliente y para servidor.
+
+Ademas, tuve que cambiar el archivo Dockerfile del cliente para que no se ejecute COPY del `config.yaml` cada vez que se modifica dicho archivo.
+
+### Ejercicio 3
+
+Dentro del script `validar-echo-server`, se corre el comando
+
+```
+docker run --rm --network $NETWORK_NAME busybox sh -c "echo '$EXPECTED'| nc server 12345"
+```
+
+Lo cual levanta un container de docker a partir de la imagen de busybox (una imagen con herramientas basicas de linux, incluyendo netcat), ademas de conectarlo a la misma docker network `NETWORK_NAME` del echo server. Una vez levantado el contenedor, se ejecuta netcat con el mensaje esperado y luego el script compara los resultados para determinar si funciona o no.
+
+### Ejercicio 4
+
+Para el manejo de la senal SIGTERM desde el servidor, agregue a la clase `Server`, el metodo `__close_conections`, el cual es llamado por el handler de la senal, y dentro del cual se cierra el socket del server y del cliente actual si este no se habia cerrado al momento de la senal. Ademas se agrego una flag `_stop` para indicar si se deberia seguir aceptando nuevas conexiones.
+
+Desde el lado del cliente, se agrego el handler de la senal SIGTERM para comprobar en cada loop si el cliente deberia seguir enviando mensajes al server.
+
 ### Ejercicio No. 5
 
 #### Protocolo de comunicacion
