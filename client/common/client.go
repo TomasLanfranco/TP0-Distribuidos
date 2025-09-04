@@ -105,8 +105,6 @@ func (c *Client) MakeBets(bets []Bet, more_bets bool) bool {
 			}
 		}
 
-		time.Sleep(c.config.LoopPeriod)
-
 		return true
 	}
 }
