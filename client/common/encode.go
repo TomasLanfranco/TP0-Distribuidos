@@ -36,7 +36,7 @@ func EncodeBet(bet Bet) []byte {
 
 	encoded = append(encoded, encodeString(bet.Name)...)
 	encoded = append(encoded, encodeString(bet.Surname)...)
-	encoded = append(encoded, encodeString(bet.Dni)...)
+	encoded = append(encoded, encodeInt(bet.Dni)...)
 	encoded = append(encoded, []byte(bet.Birth)...)
 	encoded = append(encoded, encodeInt(bet.Number)...)
 
