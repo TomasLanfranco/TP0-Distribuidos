@@ -192,3 +192,9 @@ El script `generar-compose.sh` se ejecuta de la siguiente forma:
 ```
 
 Internamente, pasa los parametros a un script de python, el cual se encargara de crear el archivo de docker compose con la cantidad de clientes adecuada.
+
+### Ejercicio 2
+
+Para agregar la persistencia de los archivos de configuracion al iniciar los containers, cambie el script del archivo docker compose para que ahora incluya volumenes de docker tanto para cliente y para servidor.
+
+Ademas, tuve que cambiar el archivo Dockerfile del cliente para que no se ejecute COPY del `config.yaml` cada vez que se modifica dicho archivo.
