@@ -119,9 +119,8 @@ func (c *Client) readResponse(expected uint32) error {
 		return err
 	}
 
-	log.Infof("action: receive_message | result: success | client_id: %v | message: %s",
+	log.Debugf("action: receive_message | result: success | client_id: %v",
 		c.config.ID,
-		msg,
 	)
 
 	if receivedNumber := binary.BigEndian.Uint32(msg); receivedNumber != expected {
