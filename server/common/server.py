@@ -3,7 +3,6 @@ import socket
 import logging
 import signal
 import threading
-from time import time
 
 from .agency_handler import AgencyHandler
 from .utils import has_won, load_bets

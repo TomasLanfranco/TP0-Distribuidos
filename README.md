@@ -237,3 +237,17 @@ Una vez todas las agencias enviaron la totalidad de sus apuestas, indicandolo co
 ```
 
 Donde `GANADORES_SIZE` es un uint16 y cada ganador es el numero (4B) de la apuesta ganadora correspondiente
+
+### Ejercicio No. 8
+
+#### Mecanismo de Concurrencia
+
+Decidi usar multithreading en el server para la implementacion de este ejercicio ya que, a pesar del GIL de Python, nuestro servidor no realiza operaciones CPU-intensive, las cuales son limitadas por el lenguaje, por lo que me parecio correcto usar threads de ejecucion por cada conexion que se levante. Cree la clase `AgencyHandler`, la cual usa la API de threading para levantar un hilo al ser instanciada.
+
+Defini una variable compartida `ready_clients` para ir llevando cuenta de cuantos clientes terminaron de enviar las apuestas, y para su sincronizacion use Locks y variables de condicion para notificar al hilo del `Server` cada vez que se actualiza hasta que se llegue a la cantidad esperada.
+
+Para el acceso al archivo de `store_bets` tambien hice uso de un lock.
+
+Finalmente hice uso de colas entre los hilos de las agencias y el servidor para la comunicacion de numero de agencias y de los resultados del sorteo.
+
+Tuve que modificar la logica del manejo de SIGTERM, haciendo join de los hilos luego de usar la cola para notificar el cierre de conexion
