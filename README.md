@@ -208,3 +208,9 @@ docker run --rm --network $NETWORK_NAME busybox sh -c "echo '$EXPECTED'| nc serv
 ```
 
 Lo cual levanta un container de docker a partir de la imagen de busybox (una imagen con herramientas basicas de linux, incluyendo netcat), ademas de conectarlo a la misma docker network `NETWORK_NAME` del echo server. Una vez levantado el contenedor, se ejecuta netcat con el mensaje esperado y luego el script compara los resultados para determinar si funciona o no.
+
+### Ejercicio 4
+
+Para el manejo de la senal SIGTERM desde el servidor, agregue a la clase `Server`, el metodo `__close_conections`, el cual es llamado por el handler de la senal, y dentro del cual se cierra el socket del server y del cliente actual si este no se habia cerrado al momento de la senal. Ademas se agrego una flag `_stop` para indicar si se deberia seguir aceptando nuevas conexiones.
+
+Desde el lado del cliente, se agrego el handler de la senal SIGTERM para comprobar en cada loop si el cliente deberia seguir enviando mensajes al server.
