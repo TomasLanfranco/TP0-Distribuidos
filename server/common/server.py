@@ -43,11 +43,11 @@ class Server:
                 self._threads.append(agency)
                 agency.start()
 
-        logging.info('action: sorteo | result: success')
         with ready_clients_cond:
             while ready_clients[0] < self._agency_count and not self._stop:
                 ready_clients_cond.wait()
 
+        logging.info('action: sorteo | result: success')
         if not self._stop:
             self.notify_agencies()
 
@@ -68,7 +68,6 @@ class Server:
         winners_per_agency = {i: [] for i in range(self._agency_count)}
         for bet in bets:
             if has_won(bet):
-                logging.info(f'action: apuesta_ganadora | result: success | dni: {bet.document} | numero: {bet.number}')
                 winners_per_agency[bet.agency - 1].append(bet)
         return winners_per_agency
 
@@ -95,6 +94,7 @@ class Server:
         Stop the server, closing all client connections
         """
         self._stop = True
+        time.sleep(0.1)
         logging.info('action: stop_server | result: in_progress')
         for q in self._agency_queues.values():
             q.put(None)
