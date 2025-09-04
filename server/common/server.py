@@ -16,7 +16,10 @@ class Server:
         self._server_socket.listen(listen_backlog)
         self._agency_count = int(agency_count)
         self._threads = []
-        self._queues = []
+        # Diccionario de colas para cada agencia, segun la IP
+        self._agency_queues = {}
+        # Cola para leer mensajes de las agencias
+        self._read_queue = queue.Queue()
         # Contador compartido entre las agencias
         self._active_agencies = 0
         self._stop = False
@@ -25,6 +28,7 @@ class Server:
         ready_clients = 0
         ready_clients_lock = threading.Lock()
         ready_clients_cond = threading.Condition(ready_clients_lock)
+        storage_lock = threading.Lock()
 
         signal.signal(signal.SIGTERM, self.__close_connections)
         
@@ -32,11 +36,12 @@ class Server:
             client_sock = self.__accept_new_connection()
             if client_sock:
                 q = queue.Queue(1)
-                agency = AgencyHandler(client_sock, ready_clients_cond, ready_clients, q)
-                agency.start()
                 self._active_agencies += 1
-                self._queues.append(q)
+                addr = client_sock.getpeername()
+                self._agency_queues[addr] = q
+                agency = AgencyHandler(client_sock, ready_clients_cond, ready_clients, q, storage_lock, self._read_queue)
                 self._threads.append(agency)
+                agency.start()
 
         logging.info('action: sorteo | result: success')
         with ready_clients_cond:
@@ -47,9 +52,9 @@ class Server:
     def notify_agencies(self):
         try:
             winners_per_agency = self.collect_winning_bets()
-            for q in self._queues:
-                agency = q.get()
-                q.put(winners_per_agency[agency])
+            for i in range(self._agency_count):
+                addr, agency = self._read_queue.get()
+                self._agency_queues[addr].put(winners_per_agency[agency])
         except Exception as e:
             logging.error(f'action: notify_agencies | result: fail | error: {e}')
         finally:

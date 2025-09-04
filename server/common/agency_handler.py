@@ -5,12 +5,14 @@ from .decode import DNI_SIZE, MSG_LEN_SIZE, NUMBER_SIZE, decode_batch
 from .utils import store_bets
 
 class AgencyHandler(threading.Thread):
-    def __init__(self, client_socket, ready_clients_cond, ready_clients, q):
+    def __init__(self, client_socket, ready_clients_cond, ready_clients, q, storage_lock, server_queue):
         threading.Thread.__init__(self)
         self.client_socket = client_socket
         self.ready_clients_cond = ready_clients_cond
         self.ready_clients = ready_clients
         self.q = q
+        self.server_queue = server_queue
+        self.storage_lock = storage_lock
 
     def run(self):
         try:
@@ -27,7 +29,8 @@ class AgencyHandler(threading.Thread):
                 self.ready_clients += 1
                 self.ready_clients_cond.notify_all()
             # Notify the server the agency ID to collect winners
-            self.q.put(agency)
+            addr = self.client_socket.getpeername()
+            self.server_queue.put((addr, agency))
             winners = self.q.get()
             self.__send_winners(winners)
         except Exception as e:
@@ -39,15 +42,16 @@ class AgencyHandler(threading.Thread):
                 msg_len = self.__read_exact(MSG_LEN_SIZE)
                 msg = self.__read_exact(int.from_bytes(msg_len, 'big'))
                 agency, bets, more_batches = decode_batch(msg)
-                store_bets(bets)
-                logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
+                with self.storage_lock:
+                    store_bets(bets)
+                logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)} | agencia: {agency}')
                 if more_batches:
                     self.__send_ack(bets[-1])
                 else:
                     return agency
                 
         except Exception as e:
-            logging.error(f'action: apuesta_almacenada | result: fail | cantidad: {len(bets)}')
+            logging.error(f'action: apuesta_almacenada | result: fail | cantidad: {len(bets)} | agencia: {agency}')
             self.__send_ack(0)
 
 
