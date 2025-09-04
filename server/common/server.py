@@ -55,7 +55,8 @@ class Server:
             winners_per_agency = self.collect_winning_bets()
             for i in range(self._agency_count):
                 addr, agency = self._read_queue.get()
-                self._agency_queues[addr].put(winners_per_agency[agency-1])
+                if agency > -1:
+                    self._agency_queues[addr].put(winners_per_agency[agency-1])
         except Exception as e:
             logging.error(f'action: notify_agencies | result: fail | error: {e}')
         finally:

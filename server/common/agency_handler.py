@@ -1,3 +1,4 @@
+import queue
 import threading
 import logging
 
@@ -14,52 +15,84 @@ class AgencyHandler(threading.Thread):
         self.server_queue = server_queue
         self.storage_lock = storage_lock
 
+
     def run(self):
         try:
-            agency = self.process_batch()
-            self.notify_server_and_send_winners(agency)
-        except OSError as e:
+            agency = self.__process_batches()
+            self.notify_server(agency)
+            if agency != -1:
+                winners = self.q.get()
+                self.__send_winners(winners)
+        except Exception as e:
             logging.error(f"action: receive_message | result: fail | error: {e}")
         finally:
             self.client_socket.close()
 
-    def notify_server_and_send_winners(self, agency):
+
+    def notify_server(self, agency):
+        '''
+        Notify to server that this agency is ready to receive winners
+        If agency is -1, an error happened while processing bets
+        '''
+        with self.ready_clients_cond:
+            self.ready_clients[0] += 1
+            self.ready_clients_cond.notify_all()
+        addr = self.client_socket.getpeername()
+        self.server_queue.put((addr, agency))
+
+
+    def __process_batches(self):
+        last_bet = None
+        while True:
+            try:
+                res, bets, agency = self.__process_batch_if_active()
+                if res != 0:
+                    return res
+            except Exception as e:
+                logging.error(f'action: apuesta_almacenada | result: fail | cantidad: {len(bets)} | agencia: {agency}')
+                self.__send_ack(last_bet)
+                self.notify_server(-1)
+                return -1
+
+
+    def __process_batch_if_active(self):
+        '''
+        Check if server asked to stop processing batches
+        If not, process a batch
+        '''
         try:
-            with self.ready_clients_cond:
-                logging.info(f"action: agencia_lista | result: in_progress | ready_clients: {self.ready_clients[0]}")
-                self.ready_clients[0] += 1
-                self.ready_clients_cond.notify_all()
-            logging.info(f"action: agencia_lista | result: success | agencia: {agency}")
-            # Notify the server the agency ID to collect winners
-            addr = self.client_socket.getpeername()
-            self.server_queue.put((addr, agency))
-            winners = self.q.get()
-            self.__send_winners(winners)
-        except Exception as e:
-            logging.error(f"action: notify_server_and_send_winners | result: fail | error: {e}")
+            self.q.get_nowait()
+        except queue.Empty:
+            return self.__process_batch()
+        else:
+            # Server asked to stop
+            return -2, [], None
+        
 
-    def process_batch(self):
-        try: 
-            while True:
-                msg_len = self.__read_exact(MSG_LEN_SIZE)
-                msg = self.__read_exact(int.from_bytes(msg_len, 'big'))
-                agency, bets, more_batches = decode_batch(msg)
-                with self.storage_lock:
-                    store_bets(bets)
-                logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)} | agencia: {agency}')
-                if more_batches:
-                    self.__send_ack(bets[-1])
-                else:
-                    return agency
-                
-        except Exception as e:
-            logging.error(f'action: apuesta_almacenada | result: fail | cantidad: {len(bets)} | agencia: {agency}')
-            self.__send_ack(0)
-
+    def __process_batch(self):
+        '''
+        Process a single batch of bets
+        Return 0 if more batches are expected
+        Return agency number if no more batches are expected
+        '''
+        msg_len = self.__read_exact(MSG_LEN_SIZE)
+        msg = self.__read_exact(int.from_bytes(msg_len, 'big'))
+        agency, bets, more_batches = decode_batch(msg)
+        with self.storage_lock:
+            store_bets(bets)
+        logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)} | agencia: {agency}')
+        last_bet = bets[-1]
+        self.__send_ack(last_bet)
+        if more_batches:
+            return 0, bets, agency
+        else:
+            return agency, bets, agency
+        
 
     def __send_ack(self, bet):
         msg = b''
-        msg += bet.number.to_bytes(NUMBER_SIZE, 'big')
+        number = 0 if bet is None else int(bet.number)
+        msg += number.to_bytes(NUMBER_SIZE, 'big')
         self.client_socket.sendall(msg)
 
 
