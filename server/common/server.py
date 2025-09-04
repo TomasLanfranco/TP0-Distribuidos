@@ -94,7 +94,6 @@ class Server:
         Stop the server, closing all client connections
         """
         self._stop = True
-        time.sleep(0.1)
         logging.info('action: stop_server | result: in_progress')
         for q in self._agency_queues.values():
             q.put(None)

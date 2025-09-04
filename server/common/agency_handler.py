@@ -1,6 +1,7 @@
 import queue
 import threading
 import logging
+import time
 
 from .decode import DNI_SIZE, MSG_LEN_SIZE, NUMBER_SIZE, decode_batch
 from .utils import store_bets
@@ -18,19 +19,20 @@ class AgencyHandler(threading.Thread):
 
 
     def run(self):
-        agency = self.__process_batches()
-        if agency == -2:
-            self.__send_ack(None)  # send ack with number 0 to indicate stop to client
-            self.__notify_ready()
-        if agency > -2:
-            self.__notify_server(agency)
-        if agency > -1:
-            winners = self.q.get()
-            self.__send_winners(winners)
-        self.client_socket.close()
-        # try:
-        # except Exception as e:
-        # finally:
+        try:
+            agency = self.__process_batches()
+            if agency == -2:
+                self.__send_ack(None)  # send ack with number 0 to indicate stop to client
+                self.__notify_ready()
+            if agency > -2:
+                self.__notify_server(agency)
+            if agency > -1:
+                winners = self.q.get()
+                self.__send_winners(winners)
+        except Exception as e:
+            logging.error(f'action: correr_agencia | result: fail | addr: {self.addr} | error: {e}')
+        finally:
+            self.client_socket.close()
 
 
     def __notify_server(self, agency):
@@ -96,8 +98,8 @@ class AgencyHandler(threading.Thread):
             store_bets(bets)
         logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)} | agencia: {agency}')
         last_bet = bets[-1]
-        self.__send_ack(last_bet)
         if more_batches:
+            self.__send_ack(last_bet)
             return 0, bets, agency
         else:
             return agency, bets, agency
