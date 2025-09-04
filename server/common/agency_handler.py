@@ -26,8 +26,10 @@ class AgencyHandler(threading.Thread):
     def notify_server_and_send_winners(self, agency):
         try:
             with self.ready_clients_cond:
-                self.ready_clients += 1
+                logging.info(f"action: agencia_lista | result: in_progress | ready_clients: {self.ready_clients[0]}")
+                self.ready_clients[0] += 1
                 self.ready_clients_cond.notify_all()
+            logging.info(f"action: agencia_lista | result: success | agencia: {agency}")
             # Notify the server the agency ID to collect winners
             addr = self.client_socket.getpeername()
             self.server_queue.put((addr, agency))

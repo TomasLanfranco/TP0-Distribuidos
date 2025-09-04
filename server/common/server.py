@@ -25,7 +25,7 @@ class Server:
         self._stop = False
 
     def run(self):
-        ready_clients = 0
+        ready_clients = [0]  # lista mutable para compartir entre threads
         ready_clients_lock = threading.Lock()
         ready_clients_cond = threading.Condition(ready_clients_lock)
         storage_lock = threading.Lock()
@@ -45,16 +45,17 @@ class Server:
 
         logging.info('action: sorteo | result: success')
         with ready_clients_cond:
-            while ready_clients < self._agency_count:
+            while ready_clients[0] < self._agency_count:
                 ready_clients_cond.wait()
-            self.notify_agencies()
+
+        self.notify_agencies()
 
     def notify_agencies(self):
         try:
             winners_per_agency = self.collect_winning_bets()
             for i in range(self._agency_count):
                 addr, agency = self._read_queue.get()
-                self._agency_queues[addr].put(winners_per_agency[agency])
+                self._agency_queues[addr].put(winners_per_agency[agency-1])
         except Exception as e:
             logging.error(f'action: notify_agencies | result: fail | error: {e}')
         finally:
