@@ -96,10 +96,10 @@ class Server:
         """
         self._stop = True
         logging.info('action: stop_server | result: in_progress')
-        if self._server_socket:
-            self._server_socket.close()
         for q in self._agency_queues.values():
             q.put(None)
         for t in self._threads:
             t.join()
+        if self._server_socket:
+            self._server_socket.close()
         logging.info('action: stop_server | result: success')
