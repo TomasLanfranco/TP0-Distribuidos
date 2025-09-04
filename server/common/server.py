@@ -45,10 +45,11 @@ class Server:
 
         logging.info('action: sorteo | result: success')
         with ready_clients_cond:
-            while ready_clients[0] < self._agency_count:
+            while ready_clients[0] < self._agency_count and not self._stop:
                 ready_clients_cond.wait()
 
-        self.notify_agencies()
+        if not self._stop:
+            self.notify_agencies()
 
     def notify_agencies(self):
         try:
@@ -97,6 +98,8 @@ class Server:
         logging.info('action: stop_server | result: in_progress')
         if self._server_socket:
             self._server_socket.close()
+        for q in self._agency_queues.values():
+            q.put(None)
         for t in self._threads:
             t.join()
         logging.info('action: stop_server | result: success')
