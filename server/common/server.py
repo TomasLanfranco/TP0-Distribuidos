@@ -15,6 +15,7 @@ class Server:
         self._server_socket.listen(listen_backlog)
         self._agency_count = int(agency_count)
         self._threads = []
+        self._client_sockets = []
         # Diccionario de colas para cada agencia, segun la IP
         self._agency_queues = {}
         # Cola para leer mensajes de las agencias
@@ -41,6 +42,7 @@ class Server:
                 agency = AgencyHandler(client_sock, ready_clients_cond, ready_clients, q, storage_lock, self._read_queue)
                 self._threads.append(agency)
                 agency.start()
+                self._client_sockets.append(client_sock)
 
         with ready_clients_cond:
             while ready_clients[0] < self._agency_count and not self._stop:
@@ -94,8 +96,11 @@ class Server:
         """
         self._stop = True
         logging.info('action: stop_server | result: in_progress')
+        
         for q in self._agency_queues.values():
             q.put(None)
+        for sock in self._client_sockets:
+            sock.close()
         for t in self._threads:
             t.join()
         if self._server_socket:
